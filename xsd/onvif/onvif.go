@@ -1049,8 +1049,8 @@ type PTZVector struct {
 }
 
 type PTZVectorForPtzStatus struct {
-	PanTilt Vector2DForPtzStatus `xml:"onvif:PanTilt"`
-	Zoom    Vector1DForPtzStatus `xml:"onvif:Zoom"`
+	PanTilt Vector2DForPtzStatus `xml:"PanTilt"`
+	Zoom    Vector1DForPtzStatus `xml:"Zoom"`
 }
 
 type PTZStatus struct {
