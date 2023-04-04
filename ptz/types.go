@@ -1,6 +1,7 @@
 package ptz
 
 import (
+	"encoding/xml"
 	"github.com/AminN77/customGoOnvif/xsd"
 	"github.com/AminN77/customGoOnvif/xsd/onvif"
 )
@@ -166,8 +167,36 @@ type GetStatus struct {
 	ProfileToken onvif.ReferenceToken `xml:"tptz:ProfileToken"`
 }
 
-type GetStatusResponse struct {
+type GetStatusResponse2 struct {
 	PTZStatus onvif.PTZStatus
+}
+
+type GetStatusResponse struct {
+	XMLName   xml.Name `xml:"GetStatusResponse"`
+	Text      string   `xml:",chardata"`
+	PTZStatus struct {
+		Text     string `xml:",chardata"`
+		Position struct {
+			Text    string `xml:",chardata"`
+			PanTilt struct {
+				Text  string `xml:",chardata"`
+				Space string `xml:"space,attr"`
+				X     string `xml:"x,attr"`
+				Y     string `xml:"y,attr"`
+			} `xml:"PanTilt"`
+			Zoom struct {
+				Text  string `xml:",chardata"`
+				Space string `xml:"space,attr"`
+				X     string `xml:"x,attr"`
+			} `xml:"Zoom"`
+		} `xml:"Position"`
+		MoveStatus struct {
+			Text    string `xml:",chardata"`
+			PanTilt string `xml:"PanTilt"`
+			Zoom    string `xml:"Zoom"`
+		} `xml:"MoveStatus"`
+		UtcTime string `xml:"UtcTime"`
+	} `xml:"PTZStatus"`
 }
 
 type AbsoluteMove struct {
