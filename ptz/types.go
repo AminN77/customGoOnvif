@@ -206,6 +206,13 @@ type AbsoluteMove struct {
 	Speed        onvif.PTZSpeed       `xml:"tptz:Speed"`
 }
 
+type AbsoluteMoveZoom struct {
+	XMLName      string               `xml:"tptz:AbsoluteMove"`
+	ProfileToken onvif.ReferenceToken `xml:"tptz:ProfileToken"`
+	Position     onvif.PTZVectorZoom  `xml:"tptz:Position"`
+	Speed        onvif.PTZSpeedZoom   `xml:"tptz:Speed"`
+}
+
 type AbsoluteMoveResponse struct {
 }
 
