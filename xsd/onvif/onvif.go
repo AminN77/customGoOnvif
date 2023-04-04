@@ -1054,7 +1054,7 @@ type PTZVectorForPtzStatus struct {
 }
 
 type PTZStatus struct {
-	Position   PTZVectorForPtzStatus
+	Position   PTZVectorForPtzStatus `xml:"Position"`
 	MoveStatus PTZMoveStatus
 	Error      string
 	UtcTime    xsd.DateTime
