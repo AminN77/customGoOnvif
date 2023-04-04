@@ -578,8 +578,19 @@ type Vector2D struct {
 	Space xsd.AnyURI `xml:"space,attr"`
 }
 
+type Vector2DForPtzStatus struct {
+	X     string     `xml:"x,attr"`
+	Y     string     `xml:"y,attr"`
+	Space xsd.AnyURI `xml:"space,attr"`
+}
+
 type Vector1D struct {
 	X     float64    `xml:"x,attr"`
+	Space xsd.AnyURI `xml:"space,attr"`
+}
+
+type Vector1DForPtzStatus struct {
+	X     string     `xml:"x,attr"`
 	Space xsd.AnyURI `xml:"space,attr"`
 }
 
@@ -1037,8 +1048,13 @@ type PTZVector struct {
 	Zoom    Vector1D `xml:"onvif:Zoom"`
 }
 
+type PTZVectorForPtzStatus struct {
+	PanTilt Vector2DForPtzStatus `xml:"onvif:PanTilt"`
+	Zoom    Vector1DForPtzStatus `xml:"onvif:Zoom"`
+}
+
 type PTZStatus struct {
-	Position   PTZVector
+	Position   PTZVectorForPtzStatus
 	MoveStatus PTZMoveStatus
 	Error      string
 	UtcTime    xsd.DateTime
