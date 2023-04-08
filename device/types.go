@@ -150,6 +150,42 @@ type GetSystemDateAndTimeResponse struct {
 	SystemDateAndTime onvif.SystemDateTime
 }
 
+type GetSystemDateAndTimeResponseNew struct {
+	GetSystemDateAndTimeResponse struct {
+		SystemDateAndTime struct {
+			DateTimeType    string `xml:"DateTimeType"`
+			DaylightSavings string `xml:"DaylightSavings"`
+			TimeZone        struct {
+				TZ string `xml:"TZ"`
+			} `xml:"TimeZone"`
+			UTCDateTime struct {
+				Time struct {
+					Hour   int `xml:"Hour"`
+					Minute int `xml:"Minute"`
+					Second int `xml:"Second"`
+				} `xml:"Time"`
+				Date struct {
+					Year  int `xml:"Year"`
+					Month int `xml:"Month"`
+					Day   int `xml:"Day"`
+				} `xml:"Date"`
+			} `xml:"UTCDateTime"`
+			LocalDateTime struct {
+				Time struct {
+					Hour   int `xml:"Hour"`
+					Minute int `xml:"Minute"`
+					Second int `xml:"Second"`
+				} `xml:"Time"`
+				Date struct {
+					Year  int `xml:"Year"`
+					Month int `xml:"Month"`
+					Day   int `xml:"Day"`
+				} `xml:"Date"`
+			} `xml:"LocalDateTime"`
+		} `xml:"SystemDateAndTime"`
+	} `xml:"GetSystemDateAndTimeResponse"`
+}
+
 type SetSystemFactoryDefault struct {
 	XMLName        string                   `xml:"tds:SetSystemFactoryDefault"`
 	FactoryDefault onvif.FactoryDefaultType `xml:"tds:FactoryDefault"`

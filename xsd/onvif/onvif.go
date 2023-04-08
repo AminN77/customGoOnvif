@@ -577,25 +577,25 @@ type PTZSpeedZoom struct {
 }
 
 type Vector2D struct {
-	X     float64    `xml:"x,attr"`
-	Y     float64    `xml:"y,attr"`
-	Space xsd.AnyURI `xml:"space,attr"`
+	X float64 `xml:"x,attr"`
+	Y float64 `xml:"y,attr"`
+	//Space xsd.AnyURI `xml:"space,attr"`
 }
 
 type Vector2DForPtzStatus struct {
-	X     string     `xml:"x,attr"`
-	Y     string     `xml:"y,attr"`
-	Space xsd.AnyURI `xml:"space,attr"`
+	X string `xml:"x,attr"`
+	Y string `xml:"y,attr"`
+	//Space xsd.AnyURI `xml:"space,attr"`
 }
 
 type Vector1D struct {
-	X     float64    `xml:"x,attr"`
-	Space xsd.AnyURI `xml:"space,attr"`
+	X float64 `xml:"x,attr"`
+	//Space xsd.AnyURI `xml:"space,attr"`
 }
 
 type Vector1DForPtzStatus struct {
-	X     string     `xml:"x,attr"`
-	Space xsd.AnyURI `xml:"space,attr"`
+	X string `xml:"x,attr"`
+	//Space xsd.AnyURI `xml:"space,attr"`
 }
 
 type PanTiltLimits struct {

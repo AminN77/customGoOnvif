@@ -159,6 +159,12 @@ type RelativeMove struct {
 	Speed        onvif.PTZSpeed       `xml:"tptz:Speed"`
 }
 
+type RelativeMoveNotSupportSpeed struct {
+	XMLName      string               `xml:"tptz:RelativeMove"`
+	ProfileToken onvif.ReferenceToken `xml:"tptz:ProfileToken"`
+	Translation  onvif.PTZVector      `xml:"tptz:Translation"`
+}
+
 type RelativeMoveResponse struct {
 }
 

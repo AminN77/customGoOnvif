@@ -1,8 +1,10 @@
 package onvif
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
+	"github.com/AminN77/customGoOnvif/sdk"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -180,6 +182,33 @@ func NewDevice(params DeviceParams) (*Device, error) {
 
 	dev.getSupportedServices(resp)
 	return dev, nil
+}
+
+func NewDeviceWithGetTime(params DeviceParams) (*Device, device.GetSystemDateAndTimeResponse, error) {
+	dev := new(Device)
+	dev.params = params
+	dev.endpoints = make(map[string]string)
+	dev.addEndpoint("Device", "http://"+dev.params.Xaddr+"/onvif/device_service")
+	type Envelope struct {
+		Header struct{}
+		Body   struct {
+			GetSystemDateAndTimeResponse device.GetSystemDateAndTimeResponse
+		}
+	}
+	var reply Envelope
+
+	if dev.params.HttpClient == nil {
+		dev.params.HttpClient = new(http.Client)
+	}
+
+	getDateTime := device.GetSystemDateAndTime{}
+	httpReply, err := dev.CallMethod(getDateTime)
+	if err != nil {
+		return nil, reply.Body.GetSystemDateAndTimeResponse, errors.New("camera is not available")
+	} else {
+		err = sdk.ReadAndParse(context.Background(), httpReply, &reply, "GetSystemDateAndTime")
+		return dev, reply.Body.GetSystemDateAndTimeResponse, nil
+	}
 }
 
 func (dev *Device) addEndpoint(Key, Value string) {
