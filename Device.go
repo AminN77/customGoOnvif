@@ -1,16 +1,15 @@
 package onvif
 
 import (
-	"context"
 	"encoding/xml"
-	"errors"
-	"github.com/AminN77/customGoOnvif/sdk"
-	"io/ioutil"
+	"github.com/juju/errors"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/AminN77/customGoOnvif/device"
 	"github.com/AminN77/customGoOnvif/gosoap"
@@ -78,9 +77,10 @@ type DeviceInfo struct {
 // struct represents an abstract ONVIF device.
 // It contains methods, which helps to communicate with ONVIF device
 type Device struct {
-	params    DeviceParams
-	endpoints map[string]string
-	info      DeviceInfo
+	params     DeviceParams
+	endpoints  map[string]string
+	info       DeviceInfo
+	timeOffset gosoap.TimeOffset
 }
 
 type DeviceParams struct {
@@ -95,13 +95,13 @@ func (dev *Device) GetServices() map[string]string {
 	return dev.endpoints
 }
 
-// GetServices return available endpoints
+// GetDeviceInfo return available infos
 func (dev *Device) GetDeviceInfo() DeviceInfo {
 	return dev.info
 }
 
 func readResponse(resp *http.Response) string {
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +145,7 @@ func GetAvailableDevicesAtSpecificEthernetInterface(interfaceName string) ([]Dev
 func (dev *Device) getSupportedServices(resp *http.Response) {
 	doc := etree.NewDocument()
 
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 
 	if err := doc.ReadFromBytes(data); err != nil {
 		//log.Println(err.Error())
@@ -155,8 +155,9 @@ func (dev *Device) getSupportedServices(resp *http.Response) {
 	for _, j := range services {
 		dev.addEndpoint(j.Parent().Tag, j.Text())
 	}
-	extension_services := doc.FindElements("./Envelope/Body/GetCapabilitiesResponse/Capabilities/Extension/*/XAddr")
-	for _, j := range extension_services {
+
+	extensionServices := doc.FindElements("./Envelope/Body/GetCapabilitiesResponse/Capabilities/Extension/*/XAddr")
+	for _, j := range extensionServices {
 		dev.addEndpoint(j.Parent().Tag, j.Text())
 	}
 }
@@ -184,30 +185,60 @@ func NewDevice(params DeviceParams) (*Device, error) {
 	return dev, nil
 }
 
-func NewDeviceWithGetTime(params DeviceParams) (*Device, device.GetSystemDateAndTimeResponse, error) {
+type Envelope struct {
+	XMLName xml.Name `xml:"Envelope"`
+	//Text    string   `xml:",chardata"`
+	//Sc      string   `xml:"sc,attr"`
+	//S       string   `xml:"s,attr"`
+	//Tt      string   `xml:"tt,attr"`
+	//Tds     string   `xml:"tds,attr"`
+	Header string                                 `xml:"Header"`
+	Body   device.GetSystemDateAndTimeResponseNew `xml:"Body"`
+}
+
+func NewDeviceWithGetTime(params DeviceParams) (*Device, error) {
 	dev := new(Device)
 	dev.params = params
+	dev.params.Username = ""
+	dev.params.Password = ""
 	dev.endpoints = make(map[string]string)
 	dev.addEndpoint("Device", "http://"+dev.params.Xaddr+"/onvif/device_service")
-	type Envelope struct {
-		Header struct{}
-		Body   struct {
-			GetSystemDateAndTimeResponse device.GetSystemDateAndTimeResponse
-		}
-	}
-	var reply Envelope
 
+	//var reply Envelope
 	if dev.params.HttpClient == nil {
 		dev.params.HttpClient = new(http.Client)
 	}
 
 	getDateTime := device.GetSystemDateAndTime{}
-	httpReply, err := dev.CallMethod(getDateTime)
-	if err != nil {
-		return nil, reply.Body.GetSystemDateAndTimeResponse, errors.New("camera is not available")
+
+	ct := time.Now().UTC()
+	if httpReply, err := dev.CallMethod(getDateTime); err != nil {
+		return dev, errors.Annotate(err, "call")
 	} else {
-		err = sdk.ReadAndParse(context.Background(), httpReply, &reply, "GetSystemDateAndTime")
-		return dev, reply.Body.GetSystemDateAndTimeResponse, nil
+		bo := &Envelope{}
+		b, err := io.ReadAll(httpReply.Body)
+		err = xml.Unmarshal(b, bo)
+
+		st := time.Date(
+			bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Date.Year,
+			time.Month(bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Date.Month),
+			bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Date.Day,
+			bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Time.Hour,
+			bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Time.Minute,
+			bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Time.Second,
+			0,
+			time.UTC,
+		)
+
+		dev.timeOffset = *timeOffsetCalculator(st, ct)
+		dev.params.Username = params.Username
+		dev.params.Password = params.Password
+
+		getCapabilities := device.GetCapabilities{Category: "All"}
+		resp, err := dev.CallMethod(getCapabilities)
+		dev.getSupportedServices(resp)
+
+		return dev, errors.Annotate(err, "reply")
 	}
 }
 
@@ -267,7 +298,7 @@ func (dev Device) getEndpoint(endpoint string) (string, error) {
 	return endpointURL, errors.New("target endpoint service not found")
 }
 
-// CallMethod functions call an method, defined <method> struct.
+// CallMethod functions call a method, defined <method> struct.
 // You should use Authenticate method to call authorized requests.
 func (dev Device) CallMethod(method interface{}) (*http.Response, error) {
 	pkgPath := strings.Split(reflect.TypeOf(method).PkgPath(), "/")
@@ -297,8 +328,19 @@ func (dev Device) callMethodDo(endpoint string, method interface{}) (*http.Respo
 
 	//Auth Handling
 	if dev.params.Username != "" && dev.params.Password != "" {
-		soap.AddWSSecurity(dev.params.Username, dev.params.Password)
+		soap.AddWSSecurity(dev.params.Username, dev.params.Password, dev.timeOffset)
 	}
 
 	return networking.SendSoap(dev.params.HttpClient, endpoint, soap.String())
+}
+
+// utility functions
+func timeOffsetCalculator(st time.Time, ct time.Time) *gosoap.TimeOffset {
+	td := ((st.Hour() - ct.Hour()) * 3_600) + ((st.Minute() - ct.Minute()) * 60) + (st.Second() - ct.Second())
+	return &gosoap.TimeOffset{
+		Year:     st.Year(),
+		Month:    st.Month(),
+		Day:      st.Day(),
+		TimeDiff: td,
+	}
 }
