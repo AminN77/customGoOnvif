@@ -21,9 +21,14 @@ type GetServiceCapabilitiesResponse struct {
 	Capabilities Capabilities
 }
 
-type GetImagingSettings struct {
+type GetImagingSettingsRequest struct {
 	XMLName          string               `xml:"timg:GetImagingSettings"`
 	VideoSourceToken onvif.ReferenceToken `xml:"timg:VideoSourceToken"`
+}
+
+type GetImagingSettingsResponse struct {
+	XMLName               string `xml:"timg:GetImagingSettingsResponse"`
+	onvif.ImagingSettings `xml:"timg:ImagingSettings"`
 }
 
 type SetExposureImagingSettings struct {
