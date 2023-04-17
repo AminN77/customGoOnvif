@@ -1,6 +1,7 @@
 package onvif
 
 import (
+	"encoding/xml"
 	"github.com/AminN77/customGoOnvif/xsd"
 )
 
@@ -439,16 +440,54 @@ type AudioSourceConfiguration struct {
 	SourceToken ReferenceToken `xml:"onvif:SourceToken"`
 }
 
+//type VideoEncoderConfiguration struct {
+//	ConfigurationEntity
+//	Encoding       VideoEncoding          `xml:"onvif:Encoding"`
+//	Resolution     VideoResolution        `xml:"onvif:Resolution"`
+//	Quality        float64                `xml:"onvif:Quality"`
+//	RateControl    VideoRateControl       `xml:"onvif:RateControl"`
+//	MPEG4          Mpeg4Configuration     `xml:"onvif:MPEG4"`
+//	H264           H264Configuration      `xml:"onvif:H264"`
+//	Multicast      MulticastConfiguration `xml:"onvif:Multicast"`
+//	SessionTimeout xsd.Duration           `xml:"onvif:SessionTimeout"`
+//}
+
 type VideoEncoderConfiguration struct {
-	ConfigurationEntity
-	Encoding       VideoEncoding          `xml:"onvif:Encoding"`
-	Resolution     VideoResolution        `xml:"onvif:Resolution"`
-	Quality        float64                `xml:"onvif:Quality"`
-	RateControl    VideoRateControl       `xml:"onvif:RateControl"`
-	MPEG4          Mpeg4Configuration     `xml:"onvif:MPEG4"`
-	H264           H264Configuration      `xml:"onvif:H264"`
-	Multicast      MulticastConfiguration `xml:"onvif:Multicast"`
-	SessionTimeout xsd.Duration           `xml:"onvif:SessionTimeout"`
+	XMLName    xml.Name `xml:"VideoEncoderConfiguration"`
+	Text       string   `xml:",chardata"`
+	Token      string   `xml:"token,attr"`
+	Name       string   `xml:"Name"`
+	UseCount   string   `xml:"UseCount"`
+	Encoding   string   `xml:"Encoding"`
+	Resolution struct {
+		Text   string `xml:",chardata"`
+		Width  string `xml:"Width"`
+		Height string `xml:"Height"`
+	} `xml:"Resolution"`
+	Quality     string `xml:"Quality"`
+	RateControl struct {
+		Text             string  `xml:",chardata"`
+		FrameRateLimit   float64 `xml:"FrameRateLimit"`
+		EncodingInterval string  `xml:"EncodingInterval"`
+		BitrateLimit     float64 `xml:"BitrateLimit"`
+	} `xml:"RateControl"`
+	H264 struct {
+		Text        string `xml:",chardata"`
+		GovLength   string `xml:"GovLength"`
+		H264Profile string `xml:"H264Profile"`
+	} `xml:"H264"`
+	Multicast struct {
+		Text    string `xml:",chardata"`
+		Address struct {
+			Text        string `xml:",chardata"`
+			Type        string `xml:"Type"`
+			IPv4Address string `xml:"IPv4Address"`
+		} `xml:"Address"`
+		Port      string `xml:"Port"`
+		TTL       string `xml:"TTL"`
+		AutoStart string `xml:"AutoStart"`
+	} `xml:"Multicast"`
+	SessionTimeout string `xml:"SessionTimeout"`
 }
 
 type VideoEncoding xsd.String
