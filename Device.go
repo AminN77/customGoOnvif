@@ -357,7 +357,7 @@ func (dev *Device) syncTimeOffset() {
 
 		ct := time.Now().UTC()
 		if httpReply, err := dev.CallMethod(getDateTime); err != nil {
-			log.Println("couldn't sync")
+			log.Println("couldn't sync ", err)
 		} else {
 			bo := &Envelope{}
 			b, err := io.ReadAll(httpReply.Body)
@@ -379,6 +379,7 @@ func (dev *Device) syncTimeOffset() {
 			)
 
 			dev.timeOffset = *timeOffsetCalculator(st, ct)
+			log.Println("sync")
 		}
 
 		time.Sleep(5 * time.Second)
