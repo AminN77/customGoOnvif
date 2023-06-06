@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"github.com/juju/errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -238,6 +239,7 @@ func NewDeviceWithGetTime(params DeviceParams) (*Device, error) {
 		resp, err := dev.CallMethod(getCapabilities)
 		dev.getSupportedServices(resp)
 
+		go dev.syncTimeOffset()
 		return dev, errors.Annotate(err, "reply")
 	}
 }
@@ -342,5 +344,43 @@ func timeOffsetCalculator(st time.Time, ct time.Time) *gosoap.TimeOffset {
 		Month:    st.Month(),
 		Day:      st.Day(),
 		TimeDiff: td,
+	}
+}
+
+func (dev *Device) syncTimeOffset() {
+	for {
+		if dev.params.HttpClient == nil {
+			dev.params.HttpClient = new(http.Client)
+		}
+
+		getDateTime := device.GetSystemDateAndTime{}
+
+		ct := time.Now().UTC()
+		if httpReply, err := dev.CallMethod(getDateTime); err != nil {
+			log.Println("couldn't sync")
+		} else {
+			bo := &Envelope{}
+			b, err := io.ReadAll(httpReply.Body)
+			if err != nil {
+				log.Println("couldn't read http body for getSystemDateAndTime")
+			}
+
+			err = xml.Unmarshal(b, bo)
+
+			st := time.Date(
+				bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Date.Year,
+				time.Month(bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Date.Month),
+				bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Date.Day,
+				bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Time.Hour,
+				bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Time.Minute,
+				bo.Body.GetSystemDateAndTimeResponse.SystemDateAndTime.UTCDateTime.Time.Second,
+				0,
+				time.UTC,
+			)
+
+			dev.timeOffset = *timeOffsetCalculator(st, ct)
+		}
+
+		time.Sleep(5 * time.Second)
 	}
 }
