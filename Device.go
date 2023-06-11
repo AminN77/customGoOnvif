@@ -348,21 +348,29 @@ func timeOffsetCalculator(st time.Time, ct time.Time) *gosoap.TimeOffset {
 }
 
 func (dev *Device) syncTimeOffset() {
+	syncer := new(Device)
+	syncer.params.Xaddr = dev.params.Xaddr
+
+	syncer.endpoints = make(map[string]string)
+	syncer.addEndpoint("Device", "http://"+dev.params.Xaddr+"/onvif/device_service")
+
+	log.Printf("dev: \n%+v\n syncer: \n%+v\n", dev, syncer)
+
 	for {
-		if dev.params.HttpClient == nil {
-			dev.params.HttpClient = new(http.Client)
+		if syncer.params.HttpClient == nil {
+			syncer.params.HttpClient = new(http.Client)
 		}
 
 		getDateTime := device.GetSystemDateAndTime{}
 
 		ct := time.Now().UTC()
-		if httpReply, err := dev.CallMethod(getDateTime); err != nil {
+		if httpReply, err := syncer.CallMethod(getDateTime); err != nil {
 			log.Println("couldn't sync ", err)
 		} else {
 			bo := &Envelope{}
 			b, err := io.ReadAll(httpReply.Body)
 			if err != nil {
-				log.Println("couldn't read http body for getSystemDateAndTime")
+				log.Println("couldn't read http body for getSystemDateAndTime ", err)
 			}
 
 			err = xml.Unmarshal(b, bo)
@@ -379,7 +387,7 @@ func (dev *Device) syncTimeOffset() {
 			)
 
 			dev.timeOffset = *timeOffsetCalculator(st, ct)
-			log.Println("sync")
+			log.Printf("sync %+v\n", dev.timeOffset)
 		}
 
 		time.Sleep(5 * time.Second)
