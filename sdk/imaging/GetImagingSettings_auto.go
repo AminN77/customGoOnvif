@@ -63,7 +63,7 @@ type CustomImagingSettings struct {
 		MaxIris         string `xml:"MaxIris"`
 		ExposureTime    string `xml:"ExposureTime"`
 		Gain            string `xml:"Gain"`
-		Iris            string `xml:"Iris"`
+		Iris            float64 `xml:"Iris"`
 	} `xml:"Exposure"`
 	Focus struct {
 		Text          string `xml:",chardata"`
